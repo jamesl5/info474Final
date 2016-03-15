@@ -1,0 +1,850 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title>Final Project</title>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script src="https://code.jquery.com/jquery-2.2.1.min.js"   integrity="sha256-gvQgAFzTH6trSrAWoH1iPo9Xc96QxSZ3feW6kem+O00="   crossorigin="anonymous"></script>
+	<script src="https://code.jquery.com/ui/1.12.0-beta.1/jquery-ui.min.js"   integrity="sha256-WyjlLy3rvVSitHOXMctYkMCOU6GAletPg+qniNKLCQM="   crossorigin="anonymous"></script>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+	<script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	<style>
+		h1{
+			text-align: center;
+		}
+		#searchButton{padding-top:5em;}
+		.center {
+		    margin: auto;
+		    width: 40%;
+		    padding: 5px;
+		}
+		.ui-autocomplete { position: absolute; cursor: default; background:#CCC }   
+
+		/* workarounds */
+		.ui-menu {
+		    list-style:none;
+		    padding: 2px;
+		    margin: 0;
+		    display:block;
+		    float: left;
+			font-size: 1.3em;
+		}
+
+		.ui-menu .ui-menu-item .ui-state-hover,
+		.ui-menu .ui-menu-item .ui-state-active,
+		.ui-menu .ui-menu-item .ui-state-focus {
+		    font-weight: bold;
+		}
+	</style>
+</head>
+<body>
+<h1>Online Search Advertisement Ecosystem</h1>
+<div class="center">
+	<div class="col-xs-9" align="center">
+		<label for="search"><h2>Company Search</h2></label>
+		<input class="form-control input-lg" id="search" type="text">
+	</div>
+	<div class="col-xs-3" id="searchButton">
+		<button type="button" class="btn btn-default btn-lg" onclick="searchNode()">
+		<span class="glyphicon glyphicon-search" aria-hidden="true"></span> Search
+		</button>
+	</div>
+</div>
+	<script>
+var svg = d3.select("body").append("svg")
+   .attr("width", 2000)
+   .attr("height", 1200);
+
+
+
+////////////////////////
+// outer force layout
+
+var outerData = [
+{"id":"Marketers", "index":"0", "size": 10},
+{"id":"Consumers", "index":"1", "size": 10},
+{"id":"Agencies", "index":"2", "size": 12}, 
+{"id":"SearchAgencies", "index":"3", "size": 17},
+{"id":"SEMTools", "index":"4", "size": 15}, 
+{"id":"SEOPlatform", "index":"5", "size": 15}, 
+{"id":"SearchAnalytics", "index":"6", "size": 10},
+{"id":"MediaPlanning", "index":"7", "size": 12},
+{"id":"WebAnalytics", "index":"8", "size": 11},
+{"id":"SearchEngines", "index":"9", "size": 25},
+{"id":"SearchRetargeting", "index":"10", "size": 10},
+{"id":"Verification", "index":"11", "size": 10},
+{"id":"SearchNetworks", "index":"12", "size": 15}
+];
+
+var links = [
+{source: 7, target: 2},
+{source: 7, target: 3},
+{source: 0, target: 2},
+{source: 2, target: 3},
+{source: 3, target: 4},
+{source: 3, target: 5},
+{source: 4, target: 9},
+{source: 5, target: 9},
+{source: 6, target: 5},
+{source: 8, target: 5},
+{source: 9, target: 1},
+{source: 10, target: 9},
+{source: 11, target: 9},
+{source: 12, target: 10},
+{source: 12, target: 11}
+]
+
+svg.append("defs").selectAll("marker")
+    .data(["suit", "licensing", "resolved"])
+  .enter().append("marker")
+    .attr("id", function(d) { return d; })
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 30)
+    .attr("refY", 0)
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .attr("orient", "auto")
+  .append("path")
+    .attr("d", "M0,-5L10,0L0,5 L10,0 L0, -5")
+    .style("stroke", "orange");
+
+var outerLayout = d3.layout.force()
+   .size([2000,1200])
+   .charge(-20000)
+   .gravity(0.6)
+   .links(links)
+   .nodes(outerData)
+   .linkDistance(300)
+   .on("tick", outerTick)
+   .start();
+var link = svg.selectAll('.link')
+    .data(links)
+    .enter().append('line')
+    .attr('class', 'link')
+    .style('stroke-width', 10)
+    .style('stroke',"orange")
+    .style("marker-end",  "url(#suit)");
+var outerNodes = svg.selectAll("g.outer")
+  .data(outerData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "outer")
+  .attr("id", function (d) {return d.id;})
+  .call(outerLayout.drag());
+
+outerNodes
+  .append("circle")
+  .style("fill", "white")
+  .style("opacity", function(d){
+  	if(d.id == "Marketers" || d.id== "Consumers"){
+  		return 0;
+  	} else{
+  		return 0.5;
+  	}
+  })
+  .attr("r", function(d){return d.size * 7;});
+outerNodes
+	.append("text")
+	.attr("x", function(d){
+		if(d.id == "Marketers" || d.id== "Consumers"){
+	  		return -80;
+	  	} else{
+	  		return -(d.size*5);
+	  	}		
+	})
+	.attr("y", function(d){
+		if(d.id == "Marketers" || d.id== "Consumers"){
+	  		return 0;
+	  	} else{
+	  		return -d.size*9;
+	  	}	
+		
+	})
+	.style("font-size", function(d){
+		if(d.id == "Marketers" || d.id== "Consumers"){
+			return 40;
+		} else {
+			return d.size*2;
+		}
+	})
+	.attr("fill", function(d){
+		if(d.id == "Marketers" || d.id== "Consumers"){
+			return "red";
+		} else {
+			return "blue";
+		}
+	})
+	.text(function(d){return d.id;});
+
+
+////////////////////////
+// Agency Layout
+
+var agenciesData = [
+{"id":"OmnicomGroup"}, 
+{"id":"RazorFish"},
+{"id":"Publicis"},
+{"id":"Aegis"},
+{"id":"IPG"},
+{"id":"Havas"},
+{"id":"ICrossing"},
+{"id":"WPP"},
+{"id":"AKQA"},
+{"id":"MDCPartners"},
+{"id":"Dentsu"},
+{"id":"StarcomMediaVest"}
+];
+
+var agenciesLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.50)
+   .links([])
+   .nodes(agenciesData)
+   .on("tick", agenciesTick)
+   .start();
+
+var agencyNode = svg.select("g.outer#Agencies");
+
+var agenciesNodes = agencyNode.selectAll("g.inner")
+  .data(agenciesData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(agenciesLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+agenciesNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+agenciesNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+/////////////////
+////Search Agencies Layout
+var searchAgenciesData = [
+{"id":"ResolutionMedia"}, 
+{"id":"Merkle"},
+{"id":"Inpaqt"},
+{"id":"Rosetta"},
+{"id":"IProspect"},
+{"id":"Reprisemedia"},
+{"id":"ReachLocal"},
+{"id":"SEO.com"},
+{"id":"OrangeSoda"},
+{"id":"Yodle"},
+{"id":"SearchVision"},
+{"id":"Covario"},
+{"id":"OutRider"},
+{"id":"GroupM"},
+{"id":"SearchRev"},
+{"id":"AcronymMedia"},
+{"id":"RKG"}
+];
+var searchAgenciesLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(searchAgenciesData)
+   .on("tick", searchAgenciesTick)
+   .start();
+
+var searchAgencyNode = svg.select("g.outer#SearchAgencies");
+
+var searchAgenciesNodes = searchAgencyNode.selectAll("g.inner")
+  .data(searchAgenciesData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(searchAgenciesLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+searchAgenciesNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+searchAgenciesNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+
+/////////////////////////
+///////////MEDIA PLANNING
+var mediaPlanning = [
+{"id":"MarketShare"},
+{"id":"MFactor"},
+{"id":"DDS"},
+{"id":"MediaRank"},
+{"id":"TagMan"},
+{"id":"Adchemy"},
+{"id":"Covario"},
+{"id":"VisualIQ"},
+{"id":"CognitiveMatch"},
+{"id":"C3Metrics"},
+{"id":"Encore"},
+{"id":"Pulsepoint"}
+];
+var mediaPlanningLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(mediaPlanning)
+   .on("tick", mediaPlanningTick)
+   .start();
+
+var mediaPlanningNode = svg.select("g.outer#MediaPlanning");
+
+var mediaPlanningNodes = mediaPlanningNode.selectAll("g.inner")
+  .data(mediaPlanning, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(mediaPlanningLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+mediaPlanningNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+mediaPlanningNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+
+///////////////////////////
+/////////SEM TOOLS
+var semToolsData = [
+{"id":"MarinSoftware"},
+{"id":"Clickable"},
+{"id":"Kenshoo"},
+{"id":"WebVisible"},
+{"id":"BingAds"},
+{"id":"EfficientFrontier"},
+{"id":"InsideVault"},
+{"id":"OptiMine"},
+{"id":"Trellian"},
+{"id":"ClickEquations"},
+{"id":"GoogleDoubleclick"},
+{"id":"GoogleAdWords"},
+{"id":"SearchForce"},
+{"id":"YieldSoftware"},
+{"id":"Omniture"}
+];
+var semToolsLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(semToolsData)
+   .on("tick", semToolsTick)
+   .start();
+
+var semToolNode = svg.select("g.outer#SEMTools");
+
+var semToolsNodes = semToolNode.selectAll("g.inner")
+  .data(semToolsData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(semToolsLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+semToolsNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+semToolsNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+
+///////////////////////////
+/////////SEO PLATFORMS
+var seoPlatformsData = [
+{"id":"MarinSoftware"},
+{"id":"Clickable"},
+{"id":"Kenshoo"},
+{"id":"WebVisible"},
+{"id":"BingAds"},
+{"id":"EfficientFrontier"},
+{"id":"InsideVault"},
+{"id":"OptiMine"},
+{"id":"Trellian"},
+{"id":"ClickEquations"},
+{"id":"GoogleDoubleclick"},
+{"id":"GoogleAdWords"},
+{"id":"SearchForce"},
+{"id":"YieldSoftware"},
+{"id":"Omniture"}
+];
+var seoPlatformsLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(seoPlatformsData)
+   .on("tick", seoPlatformsTick)
+   .start();
+
+var seoPlatformNode = svg.select("g.outer#SEOPlatform");
+
+var seoPlatformsNodes = seoPlatformNode.selectAll("g.inner")
+  .data(seoPlatformsData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(seoPlatformsLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+seoPlatformsNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+seoPlatformsNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+
+//////////////////////////////
+//////////SEARCH ANALYTICS
+
+var searchAnalyticsData = [
+{"id":"ISpionage"},
+{"id":"AdGooroo"},
+{"id":"Covario"},
+{"id":"Experian"},
+{"id":"AnalyticsSEO"},
+{"id":"TheSearchMonitor"}
+];
+var searchAnalyticsLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(searchAnalyticsData)
+   .on("tick", searchAnalyticsTick)
+   .start();
+
+var searchAnalyticsNode = svg.select("g.outer#SearchAnalytics");
+
+var searchAnalyticsNodes = searchAnalyticsNode.selectAll("g.inner")
+  .data(searchAnalyticsData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(searchAnalyticsLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+searchAnalyticsNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+searchAnalyticsNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+
+/////////////////////////////
+/////////WEB ANALYTICS
+var webAnalyticsData = [
+{"id":"WebTrends"},
+{"id":"Unica"},
+{"id":"Omniture"},
+{"id":"CoreMetrics"},
+{"id":"KnowClick"},
+{"id":"Compete"},
+{"id":"Nedstat"},
+{"id":"Perceptions"},
+{"id":"UserTesting"},
+{"id":"YahooWebAnalytics"},
+{"id":"GoogleAnalytics"}
+];
+var webAnalyticsLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(webAnalyticsData)
+   .on("tick", webAnalyticsTick)
+   .start();
+
+var webAnalyticsNode = svg.select("g.outer#WebAnalytics");
+
+var webAnalyticsNodes = webAnalyticsNode.selectAll("g.inner")
+  .data(webAnalyticsData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(webAnalyticsLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+webAnalyticsNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+webAnalyticsNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+//////////////////////////
+//////////SEARCH RETARGETING
+var searchRetargetingData = [
+{"id":"Chango"},
+{"id":"Chitika"},
+{"id":"Magnetic"},
+{"id":"Simplifi"}
+];
+var searchRetargetingLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(searchRetargetingData)
+   .on("tick", searchRetargetingTick)
+   .start();
+
+var searchRetargetingNode = svg.select("g.outer#SearchRetargeting");
+
+var searchRetargetingNodes = searchRetargetingNode.selectAll("g.inner")
+  .data(searchRetargetingData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(searchRetargetingLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+searchRetargetingNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+searchRetargetingNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+
+////////////////////
+//////VERIFICATION
+var verificationData = [
+{"id":"Adometry"},
+{"id":"Anchor"},
+{"id":"MarketLeap"}
+];
+var verificationLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(verificationData)
+   .on("tick", verificationTick)
+   .start();
+
+var verificationNode = svg.select("g.outer#Verification");
+
+var verificationNodes = verificationNode.selectAll("g.inner")
+  .data(verificationData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(verificationLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+verificationNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+verificationNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+/////////////////////
+////////SEARCH NETWORKS
+var searchNetworksData = [
+{"id":"MarinSoftware"},
+{"id":"Clickable"},
+{"id":"Kenshoo"},
+{"id":"WebVisible"},
+{"id":"BingAds"},
+{"id":"EfficientFrontier"},
+{"id":"InsideVault"},
+{"id":"OptiMine"},
+{"id":"Trellian"},
+{"id":"ClickEquations"},
+{"id":"GoogleDoubleclick"},
+{"id":"GoogleAdWords"},
+{"id":"SearchForce"},
+{"id":"YieldSoftware"},
+{"id":"Omniture"}
+];
+var searchNetworksLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.5)
+   .links([])
+   .nodes(searchNetworksData)
+   .on("tick", searchNetworksTick)
+   .start();
+
+var searchNetworksNode = svg.select("g.outer#SearchNetworks");
+
+var searchNetworksNodes = searchNetworksNode.selectAll("g.inner")
+  .data(searchNetworksData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(searchNetworksLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+searchNetworksNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+searchNetworksNodes
+  .append("circle")
+  .style("fill", "red")
+  .attr("r", 6);
+
+
+////////////////
+//////SEARCH ENGINES
+var searchEnginesData = [
+{"id":"Google", "group":"Global"},
+{"id":"Yahoo", "group":"Global"},
+{"id":"Bing", "group":"Global"},
+{"id":"Aol", "group":"Global"},
+{"id":"Lycos", "group":"Global"},
+{"id":"Ask.com", "group":"Global"},
+{"id":"Facebook", "group":"Global"},
+{"id":"Naver", "group":"Regional"},
+{"id":"Baidu", "group":"Regional"},
+{"id":"Yandex", "group":"Regional"},
+{"id":"YahooJapan", "group":"Regional"},
+{"id":"Blekko", "group":"Vertical"},
+{"id":"Vizible", "group":"Vertical"},
+{"id":"Inform", "group":"Vertical"},
+{"id":"Kayak", "group":"Vertical"},
+{"id":"Indeed", "group":"Vertical"},
+{"id":"Daum", "group":"Vertical"},
+{"id":"WolframAlpha", "group":"Vertical"},
+{"id":"SeatGeek", "group":"Vertical"},
+{"id":"Kosmix", "group":"Vertical"},
+{"id":"Hakia", "group":"Vertical"},
+{"id":"Rollyyo", "group":"Vertical"},
+{"id":"Rediff", "group":"Vertical"},
+{"id":"Yelp", "group":"Local"},
+{"id":"Milo", "group":"Local"},
+{"id":"Citysearch", "group":"Local"},
+{"id":"Loku", "group":"Local"},
+{"id":"Local.com", "group":"Local"},
+{"id":"SuperPages.com", "group":"Local"}
+];
+var searchEnginesLayout = d3.layout.force()
+   .size([40,40])
+   .charge(-600)
+   .gravity(0.50)
+   .links([])
+   .nodes(searchEnginesData)
+   .on("tick", searchEnginesTick)
+   .start();
+
+var searchEnginesNode = svg.select("g.outer#SearchEngines");
+
+var searchEnginesNodes = searchEnginesNode.selectAll("g.inner")
+  .data(searchEnginesData, function (d) {return d.id;})
+  .enter()
+  .append("g")
+  .attr("class", "inner")
+  .attr("id", function (d) {return d.id;})
+  .call(searchEnginesLayout.drag()
+       .on("dragstart", function(){            
+            d3.event.sourceEvent.stopPropagation();
+        })
+       );
+searchEnginesNodes
+  .append("text")
+  .attr("x", function(d){return -(d.id.length * 4);})
+  .attr("y", -10)
+  .text(function(d){return d.id;})
+
+searchEnginesNodes
+  .append("circle")
+  .style("fill", colorNode)
+  .attr("r", 6);
+
+
+
+////////////////////////
+// functions
+function colorNode(d){
+	if(d.group == "Global"){
+		return "D90000";
+	} else if(d.group == "Regional"){
+		return "D96C00";
+	} else if(d.group == "Vertical"){
+		return "D99700";
+	} else {
+		return "FFD141";
+	}
+}
+
+function outerTick (e) {
+	link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+	outerNodes.attr("transform", function (d) {return "translate(" + d.x + "," + d.y + ")";});
+}
+function agenciesTick (e) {agenciesNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function searchAgenciesTick (e) {searchAgenciesNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function mediaPlanningTick (e) {mediaPlanningNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function semToolsTick (e) {semToolsNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function seoPlatformsTick (e) {seoPlatformsNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function searchAnalyticsTick (e) {searchAnalyticsNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function webAnalyticsTick (e) {webAnalyticsNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function searchRetargetingTick (e) {searchRetargetingNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function verificationTick (e) {verificationNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function searchNetworksTick (e) {searchNetworksNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+function searchEnginesTick (e) {searchEnginesNodes.attr("transform", function (d) {return "translate(" + (d.x - 20) + "," + (d.y - 20) + ")";});}
+
+
+
+//////Search Option
+var optArray = [];
+/*var length = agenciesData.length + searchAgenciesData + mediaPlanning + semToolsData + seoPlatformsData + searchAnalyticsData + webAnalyticsData + searchEnginesData + searchRetargetingData + verificationData + searchNetworksData;*/
+for (var i = 0; i < agenciesData.length - 1; i++) {
+    optArray.push(agenciesData[i].id);
+}
+for (var i = 0; i < searchAgenciesData.length - 1; i++) {
+    optArray.push(searchAgenciesData[i].id);
+}
+for (var i = 0; i < mediaPlanning.length - 1; i++) {
+    optArray.push(mediaPlanning[i].id);
+}
+for (var i = 0; i < semToolsData.length - 1; i++) {
+    optArray.push(semToolsData[i].id);
+}
+for (var i = 0; i < seoPlatformsData.length - 1; i++) {
+    optArray.push(seoPlatformsData[i].id);
+}
+for (var i = 0; i < searchAnalyticsData.length - 1; i++) {
+    optArray.push(searchAnalyticsData[i].id);
+}
+for (var i = 0; i < webAnalyticsData.length - 1; i++) {
+    optArray.push(webAnalyticsData[i].id);
+}
+for (var i = 0; i < searchEnginesData.length - 1; i++) {
+    optArray.push(searchEnginesData[i].id);
+}
+for (var i = 0; i < searchRetargetingData.length - 1; i++) {
+    optArray.push(searchRetargetingData[i].id);
+}
+for (var i = 0; i < verificationData.length - 1; i++) {
+    optArray.push(verificationData[i].id);
+}
+for (var i = 0; i < searchNetworksData.length - 1; i++) {
+    optArray.push(searchNetworksData[i].id);
+}
+
+optArray = optArray.sort();
+$(document).ready(function(){
+	$(function () {
+	    $("#search").autocomplete({
+	        source: optArray
+	    });
+	});
+
+});
+
+function searchNode() {
+    //find the node
+    var selectedVal = document.getElementById('search').value;
+    var node = svg.selectAll("g.inner");
+    if (selectedVal == "none") {
+        node.style("stroke", "white").style("stroke-width", "1");
+    } else {
+        var selected = node.filter(function (d, i) {
+            return d.id != selectedVal;
+        });
+        selected.style("opacity", "0");
+        var link = svg.selectAll(".link")
+        link.style("opacity", "0");
+        d3.selectAll("g.inner, .link").transition()
+            .duration(5000)
+            .style("opacity", 1);
+    }
+}
+
+</script>
+</body>
+</html>
